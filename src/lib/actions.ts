@@ -2,7 +2,7 @@
 "use server";
 
 import { z } from "zod";
-import { getModules, saveModule } from "./content-service";
+import { getModules, saveModule } from "./admin-content-service";
 import { revalidatePath } from "next/cache";
 
 const moduleSchema = z.object({

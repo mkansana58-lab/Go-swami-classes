@@ -1,4 +1,4 @@
-import { getModules } from "@/lib/content-service";
+import { getModules } from "@/lib/admin-content-service";
 import { NextResponse } from "next/server";
 
 export const dynamic = 'force-dynamic';
