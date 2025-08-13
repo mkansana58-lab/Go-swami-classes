@@ -139,7 +139,7 @@ export function StudyPlanForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full !mt-8 text-lg py-6 bg-accent hover:bg-accent/90" disabled={isLoading}>
+        <Button type="submit" className="w-full !mt-8 text-lg py-6" disabled={isLoading} variant="default">
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
