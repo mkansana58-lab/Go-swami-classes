@@ -1,0 +1,14 @@
+{
+    "modules": [
+        {
+            "id": "admin-mod-1715869000",
+            "title": "General Knowledge",
+            "topics": ["Current Affairs", "Indian History", "Geography", "Basic Science"]
+        },
+        {
+            "id": "admin-mod-1715869001",
+            "title": "Mathematics",
+            "topics": ["Algebra", "Trigonometry", "Calculus", "Statistics"]
+        }
+    ]
+}

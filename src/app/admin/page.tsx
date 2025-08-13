@@ -25,8 +25,6 @@ export default function AdminPage() {
         description: "Welcome to the Admin Panel!",
       });
       setIsLoggedIn(true);
-      // In a real app, you'd likely redirect to a dashboard
-      // For now, we'll just show the dashboard content on the same page
     } else {
       toast({
         variant: "destructive",
@@ -67,7 +65,9 @@ export default function AdminPage() {
                 </CardHeader>
                 <CardContent>
                      <p className="text-muted-foreground mb-4">Create and edit quiz questions and resource links.</p>
-                    <Button disabled>Manage Content (Coming Soon)</Button>
+                     <Button asChild>
+                        <Link href="/admin/content">Manage Content</Link>
+                    </Button>
                 </CardContent>
             </Card>
         </div>

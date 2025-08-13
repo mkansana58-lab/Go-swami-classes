@@ -13,10 +13,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { BookCheck, BrainCircuit, Rocket, Trophy, Loader2, PartyPopper, BookOpen, Youtube, PlusCircle } from 'lucide-react';
+import { BookCheck, BrainCircuit, Rocket, Trophy, Loader2, PartyPopper, BookOpen, Youtube, PlusCircle, LayoutGrid } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { type Module as AdminModule } from '@/lib/content-service';
 
 interface Topic {
   id: string;
@@ -171,14 +172,60 @@ const ResourcesComponent = ({ moduleTitle }: { moduleTitle: string }) => {
     )
 }
 
+const AddModulesComponent = ({ onAddModule, adminModules, existingModules }: { onAddModule: (module: AdminModule) => void; adminModules: AdminModule[]; existingModules: Module[] }) => {
+    const availableModules = adminModules.filter(am => !existingModules.some(em => em.title === am.title));
+
+    return (
+        <>
+            <DialogHeader>
+                <DialogTitle>Add New Modules</DialogTitle>
+                <DialogDescription>Add pre-defined modules to your study plan.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+                {availableModules.length > 0 ? (
+                    <div className="space-y-2">
+                        {availableModules.map(module => (
+                            <div key={module.id} className="flex items-center justify-between p-2 border rounded-md">
+                                <div>
+                                    <h4 className="font-semibold">{module.title}</h4>
+                                    <p className="text-xs text-muted-foreground">{module.topics.length} topics</p>
+                                </div>
+                                <Button size="sm" onClick={() => onAddModule(module)}>
+                                    <PlusCircle className="mr-2 h-4 w-4" /> Add
+                                </Button>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-center text-muted-foreground">No new modules available to add.</p>
+                )}
+            </div>
+        </>
+    )
+}
+
 
 export function StudyPlanClient() {
     const [plan, setPlan] = useState<StudyPlan | null>(null);
     const [hydrated, setHydrated] = useState(false);
     const [newTopicInputs, setNewTopicInputs] = useState<{[key: string]: string}>({});
+    const [adminModules, setAdminModules] = useState<AdminModule[]>([]);
     const router = useRouter();
 
     useEffect(() => {
+        const fetchAdminContent = async () => {
+            try {
+                const res = await fetch('/api/content');
+                if (res.ok) {
+                    const data = await res.json();
+                    setAdminModules(data.modules);
+                }
+            } catch (error) {
+                console.error("Failed to fetch admin content", error);
+            }
+        };
+
+        fetchAdminContent();
         const planText = localStorage.getItem('studyPlan');
         if (!planText) { router.replace('/'); return; }
         const savedProgress = localStorage.getItem('studyProgress');
@@ -196,7 +243,6 @@ export function StudyPlanClient() {
         newPlan.modules.forEach(m => m.topics.forEach(t => { if (t.completed) progress[t.id] = true; }));
         localStorage.setItem('studyProgress', JSON.stringify(progress));
 
-        // This is a bit of a hack to save the whole plan back as a string
         const planAsString = `# ${newPlan.title}\n\n` + newPlan.modules.map(m => `## ${m.title}\n` + m.topics.map(t => `- ${t.text}`).join('\n')).join('\n\n');
         localStorage.setItem('studyPlan', planAsString);
     };
@@ -243,6 +289,26 @@ export function StudyPlanClient() {
         setNewTopicInputs(prev => ({...prev, [moduleId]: ''}));
     };
 
+    const handleAddModule = (adminModule: AdminModule) => {
+        setPlan(prevPlan => {
+            if (!prevPlan) return null;
+
+            const newModule: Module = {
+                id: `mod-${prevPlan.modules.length}-${Date.now()}`,
+                title: adminModule.title,
+                topics: adminModule.topics.map((topic, index) => ({
+                    id: `topic-admin-${adminModule.id}-${index}`,
+                    text: topic,
+                    completed: false
+                }))
+            };
+
+            const newPlan = { ...prevPlan, modules: [...prevPlan.modules, newModule] };
+            updateProgressInStorage(newPlan);
+            return newPlan;
+        })
+    };
+
     const { totalTopics, completedTopics, progressPercentage } = useMemo(() => {
         if (!plan) return { totalTopics: 0, completedTopics: 0, progressPercentage: 0 };
         const allTopics = plan.modules.flatMap(m => m.topics);
@@ -269,7 +335,17 @@ export function StudyPlanClient() {
         <div className="space-y-8">
             <Card className="shadow-lg border-2 border-primary/10">
                 <CardHeader>
-                    <CardTitle className="font-headline text-3xl flex flex-wrap items-center gap-2"><Rocket className="text-accent" /> {plan.title}</CardTitle>
+                    <CardTitle className="font-headline text-3xl flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2"><Rocket className="text-accent" /> {plan.title}</div>
+                        <Dialog>
+                            <DialogTrigger asChild>
+                                <Button variant="outline"><LayoutGrid className="mr-2 h-4 w-4" /> Add Modules</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                                <AddModulesComponent onAddModule={handleAddModule} adminModules={adminModules} existingModules={plan.modules} />
+                            </DialogContent>
+                        </Dialog>
+                    </CardTitle>
                     <CardDescription>Here is your personalized roadmap to success. Track your progress and conquer each module.</CardDescription>
                 </CardHeader>
                 <CardContent>
