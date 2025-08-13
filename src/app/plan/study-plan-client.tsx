@@ -13,9 +13,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { BookCheck, BrainCircuit, Rocket, Trophy, Loader2, PartyPopper, BookOpen, Youtube } from 'lucide-react';
+import { BookCheck, BrainCircuit, Rocket, Trophy, Loader2, PartyPopper, BookOpen, Youtube, PlusCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 
 interface Topic {
   id: string;
@@ -174,6 +175,7 @@ const ResourcesComponent = ({ moduleTitle }: { moduleTitle: string }) => {
 export function StudyPlanClient() {
     const [plan, setPlan] = useState<StudyPlan | null>(null);
     const [hydrated, setHydrated] = useState(false);
+    const [newTopicInputs, setNewTopicInputs] = useState<{[key: string]: string}>({});
     const router = useRouter();
 
     useEffect(() => {
@@ -188,23 +190,57 @@ export function StudyPlanClient() {
         setPlan(parsedPlan);
         setHydrated(true);
     }, [router]);
+    
+    const updateProgressInStorage = (newPlan: StudyPlan) => {
+        const progress: { [key: string]: boolean } = {};
+        newPlan.modules.forEach(m => m.topics.forEach(t => { if (t.completed) progress[t.id] = true; }));
+        localStorage.setItem('studyProgress', JSON.stringify(progress));
+
+        // This is a bit of a hack to save the whole plan back as a string
+        const planAsString = `# ${newPlan.title}\n\n` + newPlan.modules.map(m => `## ${m.title}\n` + m.topics.map(t => `- ${t.text}`).join('\n')).join('\n\n');
+        localStorage.setItem('studyPlan', planAsString);
+    };
 
     const handleToggleTopic = (topicId: string) => {
         setPlan(prevPlan => {
             if (!prevPlan) return null;
             const newPlan = { ...prevPlan, modules: prevPlan.modules.map(m => ({ ...m, topics: m.topics.map(t => ({...t})) })) };
+            let topicFound = false;
             for (const module of newPlan.modules) {
                 const topic = module.topics.find(t => t.id === topicId);
                 if (topic) {
                     topic.completed = !topic.completed;
+                    topicFound = true;
                     break;
                 }
             }
-            const progress: { [key: string]: boolean } = {};
-            newPlan.modules.forEach(m => m.topics.forEach(t => { if (t.completed) progress[t.id] = true; }));
-            localStorage.setItem('studyProgress', JSON.stringify(progress));
+            if (topicFound) {
+                updateProgressInStorage(newPlan);
+            }
             return newPlan;
         });
+    };
+
+    const handleAddTopic = (moduleId: string) => {
+        const topicText = newTopicInputs[moduleId]?.trim();
+        if (!topicText) return;
+
+        setPlan(prevPlan => {
+            if (!prevPlan) return null;
+            const newPlan = { ...prevPlan, modules: prevPlan.modules.map(m => ({ ...m, topics: [...m.topics.map(t => ({...t}))] })) };
+            const module = newPlan.modules.find(m => m.id === moduleId);
+            if (module) {
+                module.topics.push({
+                    id: `topic-${moduleId}-custom-${Date.now()}`,
+                    text: topicText,
+                    completed: false,
+                });
+                updateProgressInStorage(newPlan);
+            }
+            return newPlan;
+        });
+
+        setNewTopicInputs(prev => ({...prev, [moduleId]: ''}));
     };
 
     const { totalTopics, completedTopics, progressPercentage } = useMemo(() => {
@@ -271,6 +307,16 @@ export function StudyPlanClient() {
                                             </div>
                                         ))}
                                     </div>
+                                    <div className="flex gap-2 pt-4">
+                                        <Input 
+                                            placeholder="Add your own topic..."
+                                            value={newTopicInputs[module.id] || ''}
+                                            onChange={(e) => setNewTopicInputs(prev => ({...prev, [module.id]: e.target.value}))}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleAddTopic(module.id)}
+                                        />
+                                        <Button onClick={() => handleAddTopic(module.id)}><PlusCircle className="mr-2 h-4 w-4"/> Add Topic</Button>
+                                    </div>
+
                                     <Dialog>
                                         <DialogTrigger asChild><Button className="mt-4"><BrainCircuit className="mr-2 h-4 w-4"/>Take Quiz</Button></DialogTrigger>
                                         <DialogContent className="sm:max-w-[425px]"><QuizComponent moduleTitle={module.title} /></DialogContent>
