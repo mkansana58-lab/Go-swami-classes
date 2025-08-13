@@ -57,7 +57,7 @@ const QuizComponent = ({ moduleTitle }: { moduleTitle: string }) => {
           <DialogDescription>You've completed the quiz for {moduleTitle}.</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col items-center justify-center py-8 text-center">
-            <Trophy className="w-16 h-16 text-accent mb-4"/>
+            <Trophy className="w-16 h-16 text-yellow-500 mb-4"/>
             <p className="text-2xl font-bold">Your Score: {score}/{questions.length}</p>
             <p className="text-muted-foreground mt-2">{score > (questions.length / 2) ? "Great job!" : "Keep practicing!"}</p>
         </div>
@@ -160,7 +160,9 @@ export function StudyPlanClient() {
     const updateProgressInStorage = (newPlan: StudyPlan) => {
         const progress: { [key: string]: boolean } = {};
         newPlan.modules.forEach(m => m.topics.forEach(t => { if (t.completed) progress[t.id] = true; }));
-        localStorage.setItem(`progress_${plan.id}`, JSON.stringify(progress));
+        if(plan?.id) {
+          localStorage.setItem(`progress_${plan.id}`, JSON.stringify(progress));
+        }
     };
 
     const handleToggleTopic = (topicId: string) => {
