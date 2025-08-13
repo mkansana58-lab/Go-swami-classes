@@ -1,27 +1,9 @@
 
 "use server";
 
-import { generatePersonalizedStudyPlan as generatePlan, type GeneratePersonalizedStudyPlanInput } from "@/ai/flows/generate-personalized-study-plan";
 import { z } from "zod";
 import { getModules, saveModule } from "./content-service";
 import { revalidatePath } from "next/cache";
-
-const formSchema = z.object({
-  studentGoals: z.string().min(10),
-  currentKnowledgeLevel: z.string(),
-  preferredLearningStyle: z.string().optional(),
-});
-
-export async function generatePersonalizedStudyPlan(values: GeneratePersonalizedStudyPlanInput) {
-    const parsedValues = formSchema.safeParse(values);
-
-    if (!parsedValues.success) {
-        throw new Error("Invalid input");
-    }
-
-    // This calls the actual GenAI flow
-    return await generatePlan(parsedValues.data);
-}
 
 const moduleSchema = z.object({
     title: z.string().min(3, "Title must be at least 3 characters"),
