@@ -5,12 +5,11 @@ import { createNewModule } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useRef, useState } from 'react';
 import { PlusCircle, Loader2, XCircle } from 'lucide-react';
 
-const initialState = {};
+const initialState = { success: false, error: null };
 
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -54,8 +53,19 @@ export function CreateContentForm() {
     setTopics(newTopics);
   }
 
+  const action = (formData: FormData) => {
+    // Clear existing topics before appending
+    formData.delete('topics');
+    topics.forEach(topic => {
+        if(topic.trim() !== '') {
+            formData.append('topics', topic)
+        }
+    });
+    formAction(formData);
+  }
+
   return (
-    <form ref={formRef} action={formAction} className="space-y-4">
+    <form ref={formRef} action={action} className="space-y-4">
       <div className="space-y-2">
         <Label htmlFor="title">Module Title</Label>
         <Input id="title" name="title" placeholder="e.g., Indian History" required />
@@ -66,7 +76,7 @@ export function CreateContentForm() {
         {topics.map((topic, index) => (
             <div key={index} className="flex items-center gap-2">
                 <Input
-                    name="topics"
+                    name={`topic-${index}`}
                     placeholder={`Topic ${index + 1}`}
                     value={topic}
                     onChange={(e) => handleTopicChange(index, e.target.value)}
